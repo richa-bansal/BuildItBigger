@@ -5,8 +5,10 @@ package com.udacity.gradle.builditbigger;
 import android.app.FragmentManager;
 import android.content.Intent;
 
+import android.content.SharedPreferences;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -27,6 +29,8 @@ public class MainActivity extends ActionBarActivity implements TaskFragment.Task
     private static final String TAG_TASK_FRAGMENT = "task_fragment";
     private TaskFragment mTaskFragment;
     private FragmentManager fm;
+    public static final String PREFS_NAME = "BuildItBiggerPrefsFile";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,13 +40,13 @@ public class MainActivity extends ActionBarActivity implements TaskFragment.Task
         mTaskFragment = (TaskFragment) fm.findFragmentByTag(TAG_TASK_FRAGMENT);
         mInterstitialAd = new InterstitialAd(this);
         mInterstitialAd.setAdUnitId("ca-app-pub-3940256099942544/1033173712");
+        updateStartJokeTaskPref(false);
 
         mInterstitialAd.setAdListener(new AdListener() {
             @Override
             public void onAdClosed() {
                 requestNewInterstitial();
-                startJokeRetrievalTask();
-                spinner.setVisibility(View.VISIBLE);
+                updateStartJokeTaskPref(true);
             }
         });
         requestNewInterstitial();
@@ -52,6 +56,17 @@ public class MainActivity extends ActionBarActivity implements TaskFragment.Task
 
     }
 
+    @Override
+    protected void onPostResume() {
+        super.onPostResume();
+        SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+        boolean taskFlag = settings.getBoolean("startJokeTaskPref", false);
+        if (taskFlag){
+            startJokeRetrievalTask();
+            spinner.setVisibility(View.VISIBLE);
+            updateStartJokeTaskPref(false);
+        }
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -105,15 +120,25 @@ public class MainActivity extends ActionBarActivity implements TaskFragment.Task
     }
 
     private void startJokeRetrievalTask(){
+
         if (mTaskFragment ==null) {
+            Log.d("RB", "test1");
             mTaskFragment = new TaskFragment();
             fm.beginTransaction().add(mTaskFragment, TAG_TASK_FRAGMENT).commit();
         }else{
+            Log.d("RB", "test2");
             fm.beginTransaction().remove(mTaskFragment).commit();
             mTaskFragment = new TaskFragment();
             fm.beginTransaction().add(mTaskFragment, TAG_TASK_FRAGMENT).commit();
         }
 
+    }
+
+    private void updateStartJokeTaskPref(Boolean flag){
+        SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putBoolean("startJokeTaskPref", flag);
+        editor.commit();
     }
 
 
